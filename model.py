@@ -17,21 +17,35 @@ class Model():
         self.Y_one_hot = tf.one_hot(self.Y,7)
 
         self.weight_1 = tf.Variable(tf.random_normal([3,3,1,32],stddev=0.01))
+        self.bias_1 = tf.Variable(tf.random_normal([32],stddev=0.01))
+
         self.L1 = tf.nn.conv2d(self.X_img,self.weight_1,strides=[1,1,1,1],padding='SAME')
         self.L1 = tf.nn.relu(self.L1)
         self.L1 = tf.nn.max_pool(self.L1,ksize=[1,2,2,1],strides=[1,2,2,1],padding='SAME')  # now size becomes ? 24 24 32
+        self.L1 = tf.nn.bias_add(self.L1, self.bias_1)
+
         self.L1 = tf.nn.dropout(self.L1,keep_prob=self.keep_prob)
 
-        self.weight_1 = tf.Variable(tf.random_normal([3, 3, 32, 64], stddev=0.01))
-        self.L2 = tf.nn.conv2d(self.L1, self.weight_1, strides=[1, 1, 1, 1], padding='SAME')
+
+
+        self.weight_2 = tf.Variable(tf.random_normal([3, 3, 32, 64], stddev=0.01))
+        self.bias_2 = tf.Variable(tf.random_normal([64], stddev=0.01))
+
+        self.L2 = tf.nn.conv2d(self.L1, self.weight_2, strides=[1, 1, 1, 1], padding='SAME')
         self.L2 = tf.nn.relu(self.L2)
         self.L2 = tf.nn.max_pool(self.L2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],padding='SAME')  # now size becomes ? 12 12 64
+        self.L2 = tf.nn.bias_add(self.L2, self.bias_2)
+
         self.L2 = tf.nn.dropout(self.L2, keep_prob=self.keep_prob)
 
-        self.weight_1 = tf.Variable(tf.random_normal([3, 3, 64, 128], stddev=0.01))
-        self.L3 = tf.nn.conv2d(self.L2, self.weight_1, strides=[1, 1, 1, 1], padding='SAME')
+        self.weight_3 = tf.Variable(tf.random_normal([3, 3, 64, 128], stddev=0.01))
+        self.bias_3 = tf.Variable(tf.random_normal([128], stddev=0.01))
+
+        self.L3 = tf.nn.conv2d(self.L2, self.weight_3, strides=[1, 1, 1, 1], padding='SAME')
         self.L3 = tf.nn.relu(self.L3)
         self.L3 = tf.nn.max_pool(self.L3, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],padding='SAME')  # now size becomes ? 6 6 128
+        self.L3 = tf.nn.bias_add(self.L3, self.bias_3)
+
         self.L3 = tf.nn.dropout(self.L3, keep_prob=self.keep_prob)
         self.L3_flatten = tf.reshape(self.L3,[-1,6*6*128])
 
@@ -80,9 +94,6 @@ class Model():
             for i in range(epoch):
                 print("%s epoch"%i)
                 for x_data,y_data,purpose in self.get_input(data_path,batch_size):
-
-                    sess.run(self.train,feed_dict={self.X: x_data,self.Y:y_data,self.keep_prob:0.7})
-                    step +=1
                     if(step % eval_freq==0):
                         print("-------------------------------------------------------------------------------------")
                         cost,accuracy = sess.run([self.mean_cost,self.mean_accuracy],feed_dict={self.X: x_data,self.Y:y_data,self.keep_prob:1})
@@ -91,6 +102,9 @@ class Model():
                         saver.save(sess,os.path.join(checkpoint_save_dir,"%s epoch %s step"%(i,step)))
                         print("progress saved at %s "%checkpoint_save_dir+"%s epoch %s step"%(i,step))
                         print("-------------------------------------------------------------------------------------")
+                    else:
+                        sess.run(self.train, feed_dict={self.X: x_data, self.Y: y_data, self.keep_prob: 0.7})
+                    step += 1
     def get_input(self,file_path,batch_size,shuffle=True):
         with open(file_path) as csvfile:
             csvfile = np.array(csvfile.readlines()[1:-31])
@@ -122,5 +136,5 @@ class Model():
                 yield x,y,purpose
 if __name__ == "__main__":
     a = Model()
-    a.start_train(a.checkpoint_save_dir,15,500,a.DATA_PATH,1)
+    a.start_train(a.checkpoint_save_dir,15,1000,a.DATA_PATH,10)
 
