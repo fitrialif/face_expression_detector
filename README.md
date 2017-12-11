@@ -1,3 +1,3 @@
 # face_expression_detector
 
-<a href="https://imgur.com/a/rnP0S" title = "fully trained result"></a>
+<blockquote class="imgur-embed-pub" lang="en" data-id="a/rnP0S"><a href="//imgur.com/rnP0S"></a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
