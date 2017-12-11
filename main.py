@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import model
 import os
-
+import tensorflow as tf
 def get_emotion_by_index(index):
     # 0=Angry, 1=Disgust, 2=Fear, 3=Happy, 4=Sad, 5=Surprise, 6=Neutral
     if index ==0:
@@ -25,32 +25,74 @@ face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 
 cap= cv2.VideoCapture(0)
+
+sess = tf.Session()
 face_expression_detector = model.Model()
+checkpoint_save_dir = os.path.join("checkpoint")
+face_expression_detector.load_graph(sess,checkpoint_save_dir)
+
+preferred_w,preferred_h = 800,600
+
+res = np.array([[0]])
+sentiment_argmax = 0
+sentiment_arr =[]
+
 while True:
     ret,frame = cap.read()
+    frame_height, frame_width = frame.shape[:2]
+
+    frame = cv2.resize(frame,None,fx=preferred_w/ frame_width,fy=preferred_h/frame_height,interpolation=cv2.INTER_CUBIC)
+    frame_height, frame_width = frame.shape[:2]
+
     grayed = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(grayed,1.3,5)
     for x,y,w,h in faces:
         cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
         roi_gray = grayed[y:y+h,x:x+w]
-        roi_color = grayed[y:y+h,x:x+w]
-        eyes= eye_cascade.detectMultiScale(roi_gray)
-        for e_x,e_y,e_w,e_h in eyes:
-            cv2.rectangle(roi_color,(e_x,e_y),(e_x+e_w,e_y+e_h),(0,255,0),2)
+        roi_color = frame[y:y+h,x:x+w]
 
-            grayed_height, grayed_width = grayed.shape[:2]
-            desired_h, desired_w = 48, 48
-            resized_ratio_h, resized_ratio_w = desired_h / grayed_height, desired_w / grayed_width
-            res = cv2.resize(grayed, None, fx=resized_ratio_w, fy=resized_ratio_h, interpolation=cv2.INTER_CUBIC)
-            res = np.reshape(res,(-1,2304))
-            print(res.shape)
-            checkpoint_save_dir = os.path.join("checkpoint")
+        desired_h, desired_w = 48, 48
+        resized_ratio_h, resized_ratio_w = desired_h / h, desired_w / w
+        res = cv2.resize(roi_gray, None, fx=resized_ratio_w, fy=resized_ratio_h, interpolation=cv2.INTER_CUBIC)
 
-            feed_dict = {face_expression_detector.X:res,face_expression_detector.keep_prob:1}
-            print(get_emotion_by_index(face_expression_detector.predict_result(checkpoint_save_dir,feed_dict)))
-    cv2.imshow("frame",grayed)
+        res = np.reshape(res,(-1,2304))
+
+        feed_dict = {face_expression_detector.X:res,face_expression_detector.keep_prob:1}
+        sentiment_arr = np.array(sess.run(face_expression_detector.softmax_logits, feed_dict=feed_dict))
+        sentiment_arr = sentiment_arr[0]
+        sentiment_argmax = np.argmax(sentiment_arr,axis=0)
+        res = np.reshape(res,(48,48))
+        font_offset =50
+    for i,sentiment in enumerate(sentiment_arr):# 0=Angry, 1=Disgust, 2=Fear, 3=Happy, 4=Sad, 5=Surprise, 6=Neutral
+        sentiment *= 100
+        sentiment = round(sentiment,3)
+        if(sentiment_argmax == i):
+            frame = cv2.putText(frame, get_emotion_by_index(i) + " " + str(sentiment), (preferred_w - 300, i * font_offset + 100),cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+        else:
+            frame = cv2.putText(frame, get_emotion_by_index(i)+" "+str(sentiment),(preferred_w-300,i*font_offset+100),cv2.FONT_HERSHEY_COMPLEX,1,(255,0,0),2)
+    # desired_h, desired_w = 48, 48
+    # resized_ratio_h, resized_ratio_w = desired_h / frame_height, desired_w / frame_width
+    # res = cv2.resize(grayed, None, fx=resized_ratio_w, fy=resized_ratio_h, interpolation=cv2.INTER_CUBIC)
+    #
+    # res = np.reshape(res,(-1,2304))
+    #
+    # feed_dict = {face_expression_detector.X:res,face_expression_detector.keep_prob:1}
+    # sentiment_arr = np.array(sess.run(face_expression_detector.softmax_logits, feed_dict=feed_dict))
+    # sentiment_arr = sentiment_arr[0]
+    # sentiment_argmax = np.argmax(sentiment_arr,axis=0)
+    # res = np.reshape(res,(48,48))
+    # font_offset =50
+    # for i,sentiment in enumerate(sentiment_arr):# 0=Angry, 1=Disgust, 2=Fear, 3=Happy, 4=Sad, 5=Surprise, 6=Neutral
+    #     sentiment *= 100
+    #     sentiment = round(sentiment,3)
+    #     if(sentiment_argmax == i):
+    #         frame = cv2.putText(frame, get_emotion_by_index(i) + " " + str(sentiment), (preferred_w - 300, i * font_offset + 100),cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+    #     else:
+    #         frame = cv2.putText(frame, get_emotion_by_index(i)+" "+str(sentiment),(preferred_w-300,i*font_offset+100),cv2.FONT_HERSHEY_COMPLEX,1,(255,0,0),2)
+    cv2.imshow("res",res)
+    cv2.imshow("main frame",frame)
     if(cv2.waitKey(1) &0xff == ord('q')):
         break
-
+sess.close()
 cap.release()
 cv2.destroyAllWindows()

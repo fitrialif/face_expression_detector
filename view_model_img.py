@@ -24,13 +24,18 @@ def get_emotion_by_index(index):
     else:
         return "Unregistered emotion"
 a = Model()
-for x,y,purpose in a.get_input(file_path,1):
-    x = np.array(x)
-    while True:
-        print(get_emotion_by_index(int(*y)))
-        x= x.reshape(48,48)
-        frame = cv2.resize(x, None, fx=10, fy=10, interpolation=cv2.INTER_CUBIC)
-        cv2.imshow("",frame)
-        if(cv2.waitKey(1) &0xff == ord('q')):
-            cv2.destroyAllWindows()
-            break
+checkpoint_save_dir = a.checkpoint_save_dir
+
+for x,y,purpose in a.get_input(file_path,10,5):
+    feed_dict = {a.X: (x), a.keep_prob: 1}
+    for x_each,y_each,purpose_each in zip(x,y,purpose):
+        while True:
+            x_each= np.array(x_each).reshape(48,48)
+            frame = cv2.resize(x_each, None, fx=10, fy=10, interpolation=cv2.INTER_CUBIC)
+            frame = cv2.cvtColor(frame,cv2.COLOR_GRAY2RGB)
+            frame = cv2.putText(frame,get_emotion_by_index(int(y_each)),(100,100),cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,255),5)
+            cv2.imshow("",frame)
+
+            if(cv2.waitKey(1) &0xff == ord('q')):
+                cv2.destroyAllWindows()
+                break

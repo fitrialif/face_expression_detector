@@ -23,7 +23,7 @@ def get_emotion_by_index(index):
     else:
         return "Unregistered emotion"
 while True:
-    pic = cv2.imread(os.path.join("data_set","test2.jpg"))
+    pic = cv2.imread(os.path.join("data_set","test6.jpg"))
     grayed = cv2.cvtColor(pic,cv2.COLOR_BGR2GRAY)
     grayed_height, grayed_width = grayed.shape[:2]
     desired_h, desired_w = 48, 48
