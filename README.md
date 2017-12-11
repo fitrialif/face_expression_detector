@@ -1,3 +1,3 @@
 # face_expression_detector
 
-<a href="//imgur.com/rnP0S"></a>
+<img alt="" src="//i.imgur.com/Fhjc14L.gif" style="max-width: 100%; min-height: 338px;" original-title="">
