@@ -70,7 +70,7 @@ class Model():
         self.prediction_result = tf.equal(tf.argmax(self.logits,1),tf.argmax(self.Y_one_hot,1))
 
         self.mean_cost = tf.reduce_mean(self.cost,0)
-        self.mean_accuracy= tf.reduce_mean(tf.cast(self.prediction_result,tf.float32))
+        self.mean_accuracy= tf.reduce_mean(tf.cast(self.prediction_result, tf.float32))
 
         self.file_path  = os.path.join("data_set","fer2013.csv")    # data from : https://www.kaggle.com/c/challenges-in-representation-learning-facial-expression-recognition-challenge/data
     def load_graph(self,sess,checkpoint_save_dir):
